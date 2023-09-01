@@ -1,0 +1,70 @@
+-- Total Sales
+
+select round(sum(sales),2)
+from store;
+
+-- Avg monthly sales
+with avgmonth (month, year, avg_sales) as
+(select extract(month from order_date) as month, extract(year from order_date) as year, avg(sales) as avg_sales
+from store
+group by `year`, `month`
+order by `year`)
+select round(avg(avg_sales),2) average_monthly
+from avgmonth;
+
+-- Yearly Sales trend
+
+with yearsales(`year`, sales, region) as
+(select extract(year from order_date) year, round(sum(sales),2) Sales, region
+from store
+group by `year`, sales, region
+order by `year`)
+select `year`, region, round(sum(sales),2) sales
+from yearsales
+group by `year`, region;
+
+-- Total customer
+
+with total_cust (customer_name) as
+(select Customer_Name
+from store
+group by Customer_Name
+order by Customer_Name)
+select * from total_cust;
+
+with total_cust (customer_name) as
+(select Customer_Name
+from store
+group by Customer_Name
+order by Customer_Name)
+select count(Customer_Name)
+from total_cust;
+
+
+-- Total order by ship mode 
+
+select ship_mode, count(ship_mode) total_order
+from store
+group by ship_mode;
+
+-- Total order by segment 
+
+select segment, count(segment) total_order
+from store
+group by segment;
+
+-- Sales by customer
+
+select customer_name, round(sum(sales),2) sales
+from store
+group by customer_name
+order by sales desc;
+
+-- sales by Sub_Category
+
+select CATEGORY, Sub_Category, round(sum(sales),2) sales
+from store
+group by CATEGORY, Sub_Category
+order by sales desc;
+
+
