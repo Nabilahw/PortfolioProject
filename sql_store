@@ -1,0 +1,134 @@
+-- Sales by Region and State in percentage
+
+with psales (region, state, sales, regionalsales) as 
+( select region, state, sum(round(sales)) sales,
+SUM(SUM(sales)) OVER (partition by region ORDER BY (select null)) as RegionalSales
+from store
+group by region, state
+order by region, sales desc)
+select *
+from psales;
+
+with psales (region, state, sales, regionalsales) as 
+( select region, state, sum(round(sales)) sales,
+SUM(SUM(sales)) OVER (partition by region ORDER BY (select null)) as RegionalSales
+from store
+group by region, state
+order by region, sales desc)
+select *, round((sales/regionalsales)*100,2) as pstate
+from psales
+order by region desc, pstate desc;
+
+-- Categorize each state sales
+
+with avsales (state, avgsales) as
+(select state, avg(sales) avgsales
+from store
+group by state)
+select state, avgsales,
+case
+	when avgsales > (select avg(sales) from store) then 'high'
+    when avgsales < (select avg(sales) from store) then 'low'
+    else 'average'
+end as 'sales category'
+from avsales
+order by state;
+
+-- Customer behaviour
+-- Most office supply especially paper and binders purchased from consumer segment from California. Followed by furniture
+-- There are good opportunitiies to open or expand business here as there are high demand on office supply and furniture.
+-- For marketing strategy, should be focus on consumer and corporate as this segment made high purchase.
+-- However, business should concern on expanding their business in Wyoming as they do not demand os much as other country.
+select state, region, segment, Category, Sub_Category, count(Sub_Category) total
+from store
+group by state, region, segment, category, Sub_Category
+order by total desc, state;
+
+-- Sales by segment
+
+select segment, round(sum(sales),2) Sales_Segment
+from store
+group by segment
+order by Sales_Segment desc;
+
+-- Differentiate time taken between order taken and shipped in each ship mode
+
+select ship_mode, order_date, ship_date, datediff(ship_date, order_date) order_process
+from store
+order by ship_mode;
+
+with avg_process (ship_mode, order_date, ship_date, order_process) as
+(select
+	ship_mode, order_date, ship_date, datediff(ship_date, order_date) order_process
+	from store
+)
+select ship_mode, avg(order_process)
+from avg_process
+group by ship_mode
+order by ship_mode;
+
+-- Which customer use same ship mode more than 20 times?
+
+select customer_name, ship_mode, count(ship_mode) Total_shipped
+from store
+group by customer_name, ship_mode
+having count(Ship_Mode) > 20
+order by Total_shipped desc;
+
+-- sales based on category and sub-category.
+
+select category, sub_category, round(sum(sales),2) Sales
+from store
+group by category, sub_category
+order by Sales desc;
+
+select region, category, sub_category, round(sum(sales),2) Sales
+from store
+group by region, category, sub_category
+order by region, Sales desc;
+
+-- How many products under technology category ordered in the West region?
+
+select category, region, count(category)
+from store
+where category = 'technology'
+and region = 'west';
+
+-- Which subcategory has made more than $5000 but lower than $10,000?
+
+select sub_category, sum(sales)
+from store
+where sales > 5000
+and sales < 10000 
+group by Sub_Category;
+
+-- What are the average sales of furniture?
+
+select category, round(avg(sales),2)
+from store
+where Category = 'furniture';
+
+-- Show in percentage how much contribution sales made by each category to each region.
+
+with ct_regionalsales (region, category, sales, regionalsales) as
+(select
+	region, category, sum(round(sales)) sales,
+    SUM(SUM(sales)) OVER (partition by region ORDER BY (select null)) as RegionalSales
+	from store
+	group by region, category)
+select * from ct_regionalsales;
+
+with ct_regionalsales (region, category, sales, regionalsales) as
+(select
+	region, category, sum(round(sales)) sales,
+    SUM(SUM(sales)) OVER (partition by region ORDER BY (select null)) as RegionalSales
+	from store
+	group by region, category)
+select region, category, round((sales/regionalsales)*100,2) as ct_psales
+from ct_regionalsales
+order by region, ct_psales desc;
+
+
+
+ 
+
